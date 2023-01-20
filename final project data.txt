@@ -1,0 +1,366 @@
+controller
+
+
+import Groceries from "../../model/groceryModel.js";
+
+const getGrocery = async (req,res) => {
+
+    try {
+        
+        const getgrocerydata = await Groceries.find();
+        res.send(getgrocerydata);
+
+    } catch (error) {
+            res.send(error);
+    }
+
+}
+
+
+const saveGrocery = async (req,res) => {
+
+    try {
+        
+        const  { groceryItem, isPurchased }  = req.body;
+         
+        const doc = new Groceries({
+                       
+            groceryItem:groceryItem,
+            isPurchased:isPurchased,
+
+         });
+
+          const result = await doc.save();
+
+          res.send(result);
+
+
+    } catch (error) {
+            res.send(error);
+    }
+
+}
+
+
+const deletegrocery = async (req,res) => {
+    const {_id } = req.body;
+    Groceries
+    .findByIdAndDelete(_id)
+    .then(() => res.set(201).send("Deleted Successsfully"))
+    .catch((err) => console.log(err));
+}
+
+
+const updategrocery = async (req,res) => {
+    const  { groceryItem, isPurchased, _id }  = req.body;
+    
+    Groceries.findByIdAndUpdate(_id,{groceryItem,isPurchased})
+    .then(() => res.set(201).send("Updated Successsfully"))
+    .catch((err) => console.log(err));
+}
+
+export {updategrocery,deletegrocery,saveGrocery,getGrocery}
+
+
+
+
+server.jss
+
+
+import express from 'express';
+import connectDB from './db/DBconnection.js';
+import cors from 'cors';
+import router from './router/groceryRoutes.js';
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+const databaseURL = process.env.databaseURL || "mongodb://localhost:27017";
+ 
+
+
+app.use(express.json());
+app.use(cors()); 
+connectDB(databaseURL);
+
+app.use('/grocery',  router);
+
+
+
+app.listen(PORT,() => {
+    console.log("Server Running");
+})
+
+
+
+
+
+
+
+routes
+
+
+import express from 'express';
+import { updategrocery,getGrocery,deletegrocery,saveGrocery } from './controllers/groceryController.js';"
+
+
+router.get('/getGrocery',getGrocery);
+router.post('/saveGrocery',saveGrocery);
+router.delete('/deleteGrocery',deletegrocery);
+router.put('/updateGrocery',updategrocery);
+
+
+export default router;
+
+
+
+
+
+dbconnection
+
+
+import mongoose  from "mongoose";
+
+const connectDB = async (databaseURL) => {
+
+    try {
+            
+        const dbOptions = {
+             dbName:"groceryplanning",
+        }
+      
+        mongoose.set('strictQuery', false);
+        await mongoose.connect(databaseURL,dbOptions);
+        console.log("Database Connected");
+
+    } catch (error) {
+        console.log(error);
+    }
+
+} 
+
+export default connectDB;
+
+
+
+
+
+model.js
+
+
+
+import mongoose from "mongoose";
+
+const grocerySchema = mongoose.Schema({
+
+    groceryItem:{
+        type: String,
+        required:true,
+    },
+
+    isPurchased:{
+        type: Boolean,
+        required:true,
+    },
+
+},
+{
+    timestamps:true,
+}
+);
+
+const Groceries = mongoose.model('groceries',grocerySchema);
+
+export default Groceries;
+
+
+
+
+
+
+
+
+
+
+
+items
+
+
+
+    <div className='item'>
+         <div className='load'>
+         <div className='data'>Wheat 2KG</div><button  onClick={update}>Purchased</button>
+         <button onClick={remove}>X</button>
+         </div>
+    </div>
+
+
+
+.item{
+    justify-content: center;
+    text-align: center;
+    background-color: aquamarine;
+    display: flex;
+    align-items: center;
+    margin: 0px 534px;
+    padding: 4px; 
+ }
+
+ .load{
+    justify-content: center;
+    text-align: center;
+    background-color: whitesmoke;
+    display: flex;
+    align-items: center;
+    padding: 0px; 
+ }
+
+ .data{
+    padding-right: 105px;
+    color: black;
+    background-color: whitesmoke;
+    padding-top: 4px;
+    padding-bottom:4px;
+ }
+ 
+
+
+
+form
+
+
+         <form className='form' onSubmit={onFormSubmit}>
+             <input placeholder='Add shopping item' className='forminput' value={text} onChange={(e) => setText(e.target.value) }
+             />
+              
+         </form>
+ 
+
+
+
+
+.form{
+ 
+    justify-content: center;
+    text-align: center;
+    border-radius: 2px;
+}
+.forminput{
+    padding: 4px 64px;
+    border-radius: 2px;
+}
+.btn{
+    padding: 4px;
+    border-radius: 2px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import './App.css';
+import {useState,useEffect} from 'react';
+import axios from 'axios';
+import Item from './components/Item/Item.js';
+//import { updategrocery } from '../../controllers/GroceryController.js';
+
+
+function App() {
+  
+  const [text,setText] = useState("");
+  const [grocery,setGrocery] = useState([]); 
+  const [isUpdating,setUpdating] = useState("");
+
+  useEffect(() => {
+   axios.get("http://localhost:5000/getGrocery")
+   .then((res) => setGrocery(res.data))
+   .catch((err) => console.log(err));
+  });
+
+
+  const addUpdate = () => {
+
+     if(isUpdating === ""){
+      axios.post("http://localhost:5000/saveGrocery",{grocery})
+      .then((res) => {
+        console.log(res.data);
+        setText("");
+      })
+      .catch((err) => console.log(err)); 
+     }
+  }
+
+  const deleteGrocery = (_id) => {
+
+  }
+
+  const updateGrocery = (_id,text) => {
+       
+  }
+
+  return (
+     <>
+            <div className="header">Monthly Grocery Planning APP</div>
+             <h3>Plan for the Month of February</h3>
+            <div className='form'  >
+             <input placeholder='Add shopping item' className='forminput' 
+              
+              value={text} 
+              onChange={(e) => setText(e.target.value)}
+              /><button className='add' onClick={addUpdate}> Add</button>  
+
+              
+         </div>
+          
+          {
+            grocery.map(item => <Item key={item._id} text = {item.groceryItem} 
+                        remove={() => deleteGrocery(item.id)} 
+                        update={() => updateGrocery(item.id,item.isPurchased)}/> )
+          } 
+             
+        
+     </>
+  );
+}
+
+export default App;
+
+
+
+
+
+
